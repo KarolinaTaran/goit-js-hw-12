@@ -20,7 +20,6 @@ const state = {
   totalHits: 0,
   query: '',
 };
-const firstImageCard = document.querySelector('.image-card');
 
 let cardHeight;
 
@@ -102,7 +101,7 @@ function renderImages(images) {
     `;
     imageContainer.innerHTML += imageCard;
   });
-
+  const firstImageCard = document.querySelector('.image-card');
   if (firstImageCard) {
     cardHeight = firstImageCard.getBoundingClientRect().height;
   }
@@ -138,10 +137,10 @@ function onClickLoadBtn() {
           renderImages(data.hits);
           lightbox.refresh();
           state.currentPage++;
-
+          const firstImageCard = document.querySelector('.image-card');
           if (firstImageCard) {
             cardHeight = firstImageCard.getBoundingClientRect().height;
-            scrollCards(cardHeight);
+            scrollCards(cardHeight * 2);
           }
 
           setTimeout(() => {
@@ -165,6 +164,7 @@ function onClickLoadBtn() {
 }
 
 function scrollCards(height) {
+  const firstImageCard = document.querySelector('.image-card');
   if (firstImageCard) {
     window.scrollBy({
       top: height,
