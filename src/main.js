@@ -19,6 +19,7 @@ const state = {
   currentPage: 1,
   totalHits: 0,
   query: '',
+  currentQuery: '',
 };
 
 let cardHeight;
@@ -26,65 +27,72 @@ let cardHeight;
 form.addEventListener('submit', onFormSubmit);
 loadMoreButton.addEventListener('click', onClickLoadBtn);
 
-function onFormSubmit(event) {
+async function onFormSubmit(event) {
   event.preventDefault();
-  state.query = searchInput.value.trim();
 
-  if (!state.query) {
-    clearImages();
+  const newQuery = searchInput.value.trim();
+
+  if (!newQuery) {
     hideLoadMoreButton();
     return;
   }
 
   loader.style.display = 'block';
-  const apiUrl = `https://pixabay.com/api/?key=${apiKey}&q=${state.query}&image_type=photo&orientation=horizontal&safesearch=true&page=${state.currentPage}&per_page=40`;
 
-  axios
-    .get(apiUrl)
-    .then(response => {
-      const data = response.data;
+  if (newQuery !== state.currentQuery) {
+    clearImages();
+    state.currentQuery = newQuery;
+    state.currentPage = 1;
+  }
 
-      loader.style.display = 'none';
-      if (Array.isArray(data.hits) && data.hits.length > 0) {
-        state.totalHits = data.totalHits;
-        renderImages(data.hits);
-        lightbox.refresh();
-        searchInput.value = '';
-        setTimeout(() => {
-          showLoadMoreButton();
-        }, 0);
-        state.currentPage++;
-      } else {
-        clearImages();
-        hideLoadMoreButton();
-        if (state.totalHits === 0) {
-          iziToast.show({
-            message:
-              'Sorry, there are no images matching your search query. Please try again!',
-            messageColor: 'white',
-            backgroundColor: 'red',
-            position: 'topRight',
-          });
-        } else {
-          iziToast.show({
-            message:
-              "We're sorry, but you've reached the end of search results.",
-            messageColor: 'white',
-            backgroundColor: 'orange',
-            position: 'topRight',
-          });
-          searchInput.value = '';
-          state.currentPage = 1;
-        }
+  const apiUrl = `https://pixabay.com/api/?key=${apiKey}&q=${state.currentQuery}&image_type=photo&orientation=horizontal&safesearch=true&page=${state.currentPage}&per_page=40`;
+  try {
+    const response = await axios.get(apiUrl);
+    const data = response.data;
+
+    loader.style.display = 'none';
+    if (Array.isArray(data.hits) && data.hits.length > 0) {
+      state.totalHits = data.totalHits;
+      clearImages();
+      if (state.currentPage <= Math.ceil(state.totalHits / 40)) {
+        showLoadMoreButton();
       }
-    })
-    .catch(error => {
-      loader.style.display = 'none';
-      console.error('Error!', error);
-    });
+      renderImages(data.hits);
+
+      lightbox.refresh();
+      searchInput.value = '';
+      state.currentPage++;
+    } else {
+      hideLoadMoreButton();
+      if (state.totalHits === 0) {
+        iziToast.show({
+          message:
+            'Sorry, there are no images matching your search query. Please try again!',
+          messageColor: 'white',
+          backgroundColor: 'red',
+          position: 'topRight',
+        });
+      } else {
+        iziToast.show({
+          message: "We're sorry, but you've reached the end of search results.",
+          messageColor: 'white',
+          backgroundColor: 'orange',
+          position: 'topRight',
+        });
+        searchInput.value = '';
+        state.currentPage = 1;
+      }
+    }
+  } catch (error) {
+    loader.style.display = 'none';
+    console.error('Error!', error);
+  }
+  state.currentPage = 1;
+  state.query = state.currentQuery;
 }
 
 function renderImages(images) {
+  clearImages();
   images.map(image => {
     const imageCard = `
       <div class="image-card">
@@ -108,7 +116,9 @@ function renderImages(images) {
 }
 
 function clearImages() {
-  imageContainer.innerHTML = '';
+  if (state.query !== state.currentQuery) {
+    imageContainer.innerHTML = '';
+  }
 }
 
 function showLoadMoreButton() {
@@ -119,47 +129,44 @@ function hideLoadMoreButton() {
   loadMoreButton.style.display = 'none';
 }
 
-function onClickLoadBtn() {
-  state.query = searchInput.value.trim();
+async function onClickLoadBtn() {
+  state.query = state.currentQuery;
 
-  if (state.currentPage <= Math.ceil(state.totalHits / 40)) {
-    loader.style.display = 'block';
-    const apiUrl = `https://pixabay.com/api/?key=${apiKey}&q=${state.query}&image_type=photo&orientation=horizontal&safesearch=true&page=${state.currentPage}&per_page=40`;
+  loader.style.display = 'block';
+  const apiUrl = `https://pixabay.com/api/?key=${apiKey}&q=${state.currentQuery}&image_type=photo&orientation=horizontal&safesearch=true&page=${state.currentPage}&per_page=40`;
 
-    axios
-      .get(apiUrl)
-      .then(response => {
-        const data = response.data;
+  try {
+    const response = await axios.get(apiUrl);
+    const data = response.data;
 
-        loader.style.display = 'none';
+    loader.style.display = 'none';
 
-        if (Array.isArray(data.hits) && data.hits.length > 0) {
-          renderImages(data.hits);
-          lightbox.refresh();
-          state.currentPage++;
-          const firstImageCard = document.querySelector('.image-card');
-          if (firstImageCard) {
-            cardHeight = firstImageCard.getBoundingClientRect().height;
-            scrollCards(cardHeight * 2);
-          }
+    if (Array.isArray(data.hits) && data.hits.length > 0) {
+      renderImages(data.hits);
 
-          setTimeout(() => {
-            showLoadMoreButton();
-          }, 0);
-        }
-      })
-      .catch(error => {
-        loader.style.display = 'none';
-        console.error('Error!', error);
-      });
-  } else {
-    hideLoadMoreButton();
-    iziToast.show({
-      message: `We're sorry, but you've reached the end of search results.`,
-      messageColor: 'white',
-      backgroundColor: 'orange',
-      position: 'topRight',
-    });
+      lightbox.refresh();
+
+      const firstImageCard = document.querySelector('.image-card');
+      if (firstImageCard) {
+        cardHeight = firstImageCard.getBoundingClientRect().height;
+        scrollCards(cardHeight * 2);
+      }
+      state.currentPage++;
+      if (state.currentPage <= Math.ceil(state.totalHits / 40)) {
+        showLoadMoreButton();
+      } else {
+        hideLoadMoreButton();
+        iziToast.show({
+          message: `We're sorry, but you've reached the end of search results.`,
+          messageColor: 'white',
+          backgroundColor: 'orange',
+          position: 'topRight',
+        });
+      }
+    }
+  } catch (error) {
+    loader.style.display = 'none';
+    console.error('Error!', error);
   }
 }
 
