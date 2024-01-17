@@ -80,19 +80,16 @@ async function onFormSubmit(event) {
           position: 'topRight',
         });
         searchInput.value = '';
-        state.currentPage = 1;
       }
     }
   } catch (error) {
     loader.style.display = 'none';
     console.error('Error!', error);
   }
-  state.currentPage = 1;
   state.query = state.currentQuery;
 }
 
 function renderImages(images) {
-  clearImages();
   images.map(image => {
     const imageCard = `
       <div class="image-card">
@@ -107,11 +104,13 @@ function renderImages(images) {
         </a>
       </div>
     `;
-    imageContainer.innerHTML += imageCard;
+    imageContainer.insertAdjacentHTML('beforeend', imageCard);
   });
   const firstImageCard = document.querySelector('.image-card');
+
   if (firstImageCard) {
     cardHeight = firstImageCard.getBoundingClientRect().height;
+    scrollCards(cardHeight * 2);
   }
 }
 
@@ -143,15 +142,9 @@ async function onClickLoadBtn() {
 
     if (Array.isArray(data.hits) && data.hits.length > 0) {
       renderImages(data.hits);
-
       lightbox.refresh();
-
-      const firstImageCard = document.querySelector('.image-card');
-      if (firstImageCard) {
-        cardHeight = firstImageCard.getBoundingClientRect().height;
-        scrollCards(cardHeight * 2);
-      }
       state.currentPage++;
+
       if (state.currentPage <= Math.ceil(state.totalHits / 40)) {
         showLoadMoreButton();
       } else {
