@@ -29,7 +29,8 @@ loadMoreButton.addEventListener('click', onClickLoadBtn);
 
 async function onFormSubmit(event) {
   event.preventDefault();
-
+  state.currentPage = 1;
+  clearImages();
   const newQuery = searchInput.value.trim();
 
   if (!newQuery) {
@@ -40,9 +41,7 @@ async function onFormSubmit(event) {
   loader.style.display = 'block';
 
   if (newQuery !== state.currentQuery) {
-    clearImages();
     state.currentQuery = newQuery;
-    state.currentPage = 1;
   }
 
   const apiUrl = `https://pixabay.com/api/?key=${apiKey}&q=${state.currentQuery}&image_type=photo&orientation=horizontal&safesearch=true&page=${state.currentPage}&per_page=40`;
@@ -61,10 +60,11 @@ async function onFormSubmit(event) {
 
       lightbox.refresh();
       searchInput.value = '';
-      state.currentPage++;
     } else {
       hideLoadMoreButton();
-      if (state.totalHits === 0) {
+      if (state.currentPage === 1) {
+        searchInput.value = '';
+        clearImages();
         iziToast.show({
           message:
             'Sorry, there are no images matching your search query. Please try again!',
@@ -106,12 +106,6 @@ function renderImages(images) {
     `;
     imageContainer.insertAdjacentHTML('beforeend', imageCard);
   });
-  const firstImageCard = document.querySelector('.image-card');
-
-  if (firstImageCard) {
-    cardHeight = firstImageCard.getBoundingClientRect().height;
-    scrollCards(cardHeight * 2);
-  }
 }
 
 function clearImages() {
@@ -128,7 +122,7 @@ function hideLoadMoreButton() {
   loadMoreButton.style.display = 'none';
 }
 
-async function onClickLoadBtn() {
+async function onClickLoadBtn(event) {
   state.query = state.currentQuery;
 
   loader.style.display = 'block';
@@ -147,7 +141,15 @@ async function onClickLoadBtn() {
 
       if (state.currentPage <= Math.ceil(state.totalHits / 40)) {
         showLoadMoreButton();
+        if (event.target === loadMoreButton) {
+          const firstImageCard = document.querySelector('.image-card');
+          if (firstImageCard) {
+            cardHeight = firstImageCard.getBoundingClientRect().height;
+            scrollCards(cardHeight * 2);
+          }
+        }
       } else {
+        scrollCards(cardHeight * 2);
         hideLoadMoreButton();
         iziToast.show({
           message: `We're sorry, but you've reached the end of search results.`,
