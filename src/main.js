@@ -53,34 +53,22 @@ async function onFormSubmit(event) {
     if (Array.isArray(data.hits) && data.hits.length > 0) {
       state.totalHits = data.totalHits;
       clearImages();
-      if (state.currentPage <= Math.ceil(state.totalHits / 40)) {
+      if (state.currentPage < Math.ceil(state.totalHits / 40)) {
         showLoadMoreButton();
       }
       renderImages(data.hits);
 
       lightbox.refresh();
-      searchInput.value = '';
     } else {
+      clearImages();
       hideLoadMoreButton();
-      if (state.currentPage === 1) {
-        searchInput.value = '';
-        clearImages();
-        iziToast.show({
-          message:
-            'Sorry, there are no images matching your search query. Please try again!',
-          messageColor: 'white',
-          backgroundColor: 'red',
-          position: 'topRight',
-        });
-      } else {
-        iziToast.show({
-          message: "We're sorry, but you've reached the end of search results.",
-          messageColor: 'white',
-          backgroundColor: 'orange',
-          position: 'topRight',
-        });
-        searchInput.value = '';
-      }
+      iziToast.show({
+        message:
+          'Sorry, there are no images matching your search query. Please try again!',
+        messageColor: 'white',
+        backgroundColor: 'red',
+        position: 'topRight',
+      });
       if (state.totalHits < 40) {
         hideLoadMoreButton();
       }
@@ -90,6 +78,7 @@ async function onFormSubmit(event) {
     console.error('Error!', error);
   }
   state.query = state.currentQuery;
+  searchInput.value = '';
 }
 
 function renderImages(images) {
@@ -125,7 +114,7 @@ function hideLoadMoreButton() {
   loadMoreButton.style.display = 'none';
 }
 
-async function onClickLoadBtn(event) {
+async function onClickLoadBtn() {
   state.query = state.currentQuery;
 
   loader.style.display = 'block';
@@ -142,14 +131,13 @@ async function onClickLoadBtn(event) {
       renderImages(data.hits);
       lightbox.refresh();
 
-      if (state.currentPage <= Math.ceil(state.totalHits / 40)) {
+      if (state.currentPage < Math.ceil(state.totalHits / 40)) {
         showLoadMoreButton();
-        if (event.target === loadMoreButton) {
-          const firstImageCard = document.querySelector('.image-card');
-          if (firstImageCard) {
-            cardHeight = firstImageCard.getBoundingClientRect().height;
-            scrollCards(cardHeight * 2);
-          }
+
+        const firstImageCard = document.querySelector('.image-card');
+        if (firstImageCard) {
+          cardHeight = firstImageCard.getBoundingClientRect().height;
+          scrollCards(cardHeight * 2);
         }
       } else {
         scrollCards(cardHeight * 2);
