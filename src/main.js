@@ -81,6 +81,9 @@ async function onFormSubmit(event) {
         });
         searchInput.value = '';
       }
+      if (state.totalHits < 40) {
+        hideLoadMoreButton();
+      }
     }
   } catch (error) {
     loader.style.display = 'none';
@@ -126,6 +129,7 @@ async function onClickLoadBtn(event) {
   state.query = state.currentQuery;
 
   loader.style.display = 'block';
+  state.currentPage++;
   const apiUrl = `https://pixabay.com/api/?key=${apiKey}&q=${state.currentQuery}&image_type=photo&orientation=horizontal&safesearch=true&page=${state.currentPage}&per_page=40`;
 
   try {
@@ -137,7 +141,6 @@ async function onClickLoadBtn(event) {
     if (Array.isArray(data.hits) && data.hits.length > 0) {
       renderImages(data.hits);
       lightbox.refresh();
-      state.currentPage++;
 
       if (state.currentPage <= Math.ceil(state.totalHits / 40)) {
         showLoadMoreButton();
